@@ -1453,8 +1453,8 @@ mupen64plus_core_run_frame (HsCore *core)
 
   self->next_colorburst_offset = fmod (self->next_colorburst_offset + frame_offset, 1.0);
 
-  if (system_type != SYSTEM_NTSC && self->pal_v_phase > 0)
-    self->next_colorburst_offset++;
+  if (system_type != SYSTEM_NTSC)
+    self->next_colorburst_offset += self->pal_v_phase;
 
   self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
   self->n_sync = (self->n_sync + 1) % 5;
