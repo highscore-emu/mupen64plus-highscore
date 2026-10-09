@@ -144,6 +144,8 @@ struct _Mupen64PlusCore
   m64p_rom_header rom_header;
   m64p_rom_settings rom_settings;
 
+  m64p_media_loader media_loader;
+
   // Access only with g_atomic_int_*()
   gboolean paused;
 
@@ -295,6 +297,35 @@ state_callback (gpointer context, m64p_core_param param_type, int new_value)
 
     g_mutex_unlock (&core->savestate_mutex);
   }
+}
+
+static char *
+get_gb_cart_rom (Mupen64PlusCore *self, int controller_num)
+{
+  return NULL;
+}
+
+static char *
+get_gb_cart_ram (Mupen64PlusCore *self, int controller_num)
+{
+  return NULL;
+}
+
+static void
+set_dd_rom_region (Mupen64PlusCore *self, uint8_t region)
+{
+}
+
+static char *
+get_dd_rom (Mupen64PlusCore *self)
+{
+  return NULL;
+}
+
+static char *
+get_dd_disk (Mupen64PlusCore *self)
+{
+  return NULL;
 }
 
 static void
@@ -1203,6 +1234,21 @@ mupen64plus_core_load_rom (HsCore      *core,
     return FALSE;
   }
 
+  self->media_loader = (m64p_media_loader) {
+    self,
+    get_gb_cart_rom,
+    get_gb_cart_ram,
+    set_dd_rom_region,
+    get_dd_rom,
+    get_dd_disk
+  };
+
+  if (CoreDoCommand (M64CMD_SET_MEDIA_LOADER, sizeof(m64p_media_loader), &self->media_loader) != M64ERR_SUCCESS) {
+    g_set_error (error, HS_CORE_ERROR, HS_CORE_ERROR_INTERNAL, "Failed to set media loader");
+
+    return FALSE;
+  }
+
   g_autofree char *cache_path = hs_core_get_cache_path (core);
   if (!try_migrate_libretro_save (self, save_path, cache_path, error))
     return FALSE;
@@ -1456,7 +1502,9 @@ mupen64plus_core_run_frame (HsCore *core)
   if (system_type != SYSTEM_NTSC)
     self->next_colorburst_offset += self->pal_v_phase;
 
-  self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
+  if (self->interlacing != HS_INTERLACING_ODD_FIELD)
+    self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
+
   self->n_sync = (self->n_sync + 1) % 5;
 
   g_mutex_unlock (&self->video_mutex);
