@@ -170,6 +170,7 @@ struct _Mupen64PlusCore
   guint32 *vi_regs;
   float next_colorburst_offset;
   int n_sync;
+  int pal_v_phase;
 
   HsNintendo64EmulationMode mode;
   HsInterlacingMode interlacing;
@@ -1451,6 +1452,11 @@ mupen64plus_core_run_frame (HsCore *core)
   hs_gl_context_set_colorburst (self->context, vi_clocks / 4.0, line_remainder, self->next_colorburst_offset);
 
   self->next_colorburst_offset = fmod (self->next_colorburst_offset + frame_offset, 1.0);
+
+  if (system_type != SYSTEM_NTSC && self->pal_v_phase > 0)
+    self->next_colorburst_offset++;
+
+  self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
   self->n_sync = (self->n_sync + 1) % 5;
 
   g_mutex_unlock (&self->video_mutex);
