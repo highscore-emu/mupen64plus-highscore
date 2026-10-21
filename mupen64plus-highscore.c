@@ -1500,7 +1500,7 @@ mupen64plus_core_run_frame (HsCore *core)
 
   self->next_colorburst_offset = fmod (self->next_colorburst_offset + frame_offset, 1.0);
 
-  if (self->interlacing != HS_INTERLACING_ODD_FIELD) {
+  if (self->interlacing != HS_INTERLACING_EVEN_FIELD) {
     if (system_type != SYSTEM_NTSC)
       self->next_colorburst_offset += self->pal_v_phase;
 
