@@ -170,7 +170,6 @@ struct _Mupen64PlusCore
   GMutex *video_mutex;
 
   guint32 *vi_regs;
-  float colorburst_offset;
   float next_colorburst_offset;
   int n_sync;
   int pal_v_phase;
@@ -259,7 +258,7 @@ finish_savestate_cb (Mupen64PlusCore *self)
   if (result) {
     if (self->savestate_load) {
       g_mutex_lock (&self->video_mutex);
-      self->colorburst_offset = hs_core_get_colorburst_offset (HS_CORE (self));
+      self->next_colorburst_offset = hs_core_get_colorburst_offset (HS_CORE (self));
       g_mutex_unlock (&self->video_mutex);
     }
 
@@ -1496,18 +1495,15 @@ mupen64plus_core_run_frame (HsCore *core)
   double line_remainder = fmod (h_total / vi_clocks, 1.0);
   double frame_offset = fmod (total_dots / vi_clocks, 1.0);
 
-  hs_gl_context_set_colorburst (self->context, vi_clocks / 4.0, line_remainder, self->colorburst_offset);
+  hs_gl_context_set_colorburst (self->context, vi_clocks / 4.0, line_remainder, self->next_colorburst_offset);
 
   self->next_colorburst_offset = fmod (self->next_colorburst_offset + frame_offset, 1.0);
 
-  if (self->interlacing != HS_INTERLACING_ODD_FIELD) {
-    if (system_type != SYSTEM_NTSC)
-      self->next_colorburst_offset += self->pal_v_phase;
+  if (system_type != SYSTEM_NTSC)
+    self->next_colorburst_offset += self->pal_v_phase;
 
-    self->colorburst_offset = self->next_colorburst_offset;
-  }
-
-  self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
+  if (self->interlacing != HS_INTERLACING_ODD_FIELD)
+    self->pal_v_phase = (self->pal_v_phase + (int) lines) % 2;
 
   self->n_sync = (self->n_sync + 1) % 5;
 
@@ -1529,8 +1525,7 @@ mupen64plus_core_reset (HsCore *core, gboolean hard, GError **error)
 
   if (hard) {
     g_mutex_lock (&self->video_mutex);
-    self->colorburst_offset = 0;
-    self->pal_v_phase = 0;
+    self->next_colorburst_offset = 0;
     self->n_sync = 0;
     g_mutex_unlock (&self->video_mutex);
   }
