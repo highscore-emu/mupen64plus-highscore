@@ -1803,6 +1803,19 @@ mupen64plus_core_has_internal_frame_clock (HsCore *core)
 }
 
 static void
+mupen64plus_core_set_speed_factor (HsCore *core, double speed_factor)
+{
+  int percent = (int) round (speed_factor * 100);
+  gboolean limiter = percent >= 0;
+
+  if (!limiter)
+    percent = 100;
+
+  CoreDoCommand (M64CMD_CORE_STATE_SET, M64CORE_SPEED_FACTOR, &percent);
+  CoreDoCommand (M64CMD_CORE_STATE_SET, M64CORE_SPEED_LIMITER, &limiter);
+}
+
+static void
 mupen64plus_core_finalize (GObject *object)
 {
   Mupen64PlusCore *self = MUPEN64PLUS_CORE (object);
@@ -1845,6 +1858,7 @@ mupen64plus_core_class_init (Mupen64PlusCoreClass *klass)
   core_class->get_region = mupen64plus_core_get_region;
 
   core_class->has_internal_frame_clock = mupen64plus_core_has_internal_frame_clock;
+  core_class->set_speed_factor = mupen64plus_core_set_speed_factor;
 }
 
 static void
