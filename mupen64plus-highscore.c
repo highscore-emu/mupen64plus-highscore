@@ -782,17 +782,6 @@ get_interlaced (Mupen64PlusCore *self)
 m64p_error
 video_gl_swap_buf (void)
 {
-  g_mutex_lock (&core->savestate_mutex);
-
-  if (core->savestate_in_progress && !core->savestate_load) {
-    g_mutex_unlock (&core->savestate_mutex);
-
-    g_cond_signal (&core->frame_cond);
-
-    return M64ERR_SUCCESS;
-  }
-
-  g_mutex_unlock (&core->savestate_mutex);
   g_mutex_lock (&core->video_mutex);
 
   if (core->pending_resize) {
@@ -1397,21 +1386,6 @@ static void
 mupen64plus_core_run_frame (HsCore *core)
 {
   Mupen64PlusCore *self = MUPEN64PLUS_CORE (core);
-
-  g_mutex_lock (&self->savestate_mutex);
-
-  if (self->savestate_in_progress && !self->savestate_load) {
-    g_mutex_unlock (&self->savestate_mutex);
-
-    // Wait until swap_buffers() so that we have a picture ready to go
-    g_mutex_lock (&self->frame_mutex);
-    g_cond_wait (&self->frame_cond, &self->frame_mutex);
-    g_mutex_unlock (&self->frame_mutex);
-
-    return;
-  }
-
-  g_mutex_unlock (&self->savestate_mutex);
 
   m64p_system_type system_type = rom_country_code_to_system_type (self->rom_header.Country_code);
 
